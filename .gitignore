@@ -2,6 +2,8 @@ ccc/CMakeFiles
 ccc/CMakeCache.txt
 ccc/Makefile
 ccc/cmake_install.cmake
+ccc/CMakeUserPresets.json
+ccc/build
 
 ccc-rust/target
 ccc-rust/Cargo.lock

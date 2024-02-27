@@ -1,0 +1,71 @@
+{
+    "centreonBroker": {
+        "broker_id": 2,
+        "broker_name": "central-rrd-master",
+        "poller_id": 1,
+        "poller_name": "Central",
+        "module_directory": "@PREFIX_MODULES@",
+        "log_timestamp": true,
+        "bbdo_version": "3.0.0",
+        "log_thread_id": false,
+        "event_queue_max_size": 100000,
+        "command_file": "",
+        "cache_directory": "@BROKER_VAR_LIB_DIR@",
+        "log": {
+            "directory": "@BROKER_VAR_LOG_DIR@",
+            "filename": "",
+            "max_size": 0,
+            "loggers": {
+                "core": "info",
+                "config": "error",
+                "sql": "error",
+                "processing": "error",
+                "perfdata": "error",
+                "bbdo": "error",
+                "tcp": "error",
+                "tls": "error",
+                "lua": "error",
+                "bam": "error",
+                "neb": "error"
+            }
+        },
+        "input": [
+            {
+                "name": "central-rrd-master-input",
+                "port": "5670",
+                "buffering_timeout": "0",
+                "retry_interval": "60",
+                "protocol": "bbdo",
+                "tls": "auto",
+                "negotiation": "yes",
+                "one_peer_retention_mode": "no",
+                "compression": "auto",
+                "type": "ipv4"
+            }
+        ],
+        "output": [
+            {
+                "name": "central-rrd-master-output",
+                "metrics_path": "/var/lib/centreon/metrics/",
+                "status_path": "/var/lib/centreon/status/",
+                "retry_interval": "60",
+                "store_in_data_bin": "yes",
+                "buffering_timeout": "0",
+                "write_metrics": "yes",
+                "write_status": "yes",
+                "type": "rrd",
+                "insert_in_index_data": "1"
+            }
+        ],
+        "stats": [
+            {
+                "type": "stats",
+                "name": "central-rrd-master-stats",
+                "json_fifo": "@BROKER_VAR_LIB_DIR@/central-rrd-master-stats.json"
+            }
+        ],
+        "grpc": {
+            "port": 51002
+        }
+    }
+}
