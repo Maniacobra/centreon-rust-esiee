@@ -1,0 +1,220 @@
+name: Centreon collect packaging
+
+on:
+  workflow_call:
+    inputs:
+      version:
+        required: true
+        type: string
+      img_version:
+        required: true
+        type: string
+      release:
+        required: true
+        type: string
+      commit_hash:
+        required: true
+        type: string
+      stability:
+        required: true
+        type: string
+
+jobs:
+  package:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - image: centreon-collect-alma8
+            distrib: el8
+            package_extension: rpm
+            runner: collect
+            arch: amd64
+          - image: centreon-collect-alma9
+            distrib: el9
+            package_extension: rpm
+            runner: collect
+            arch: amd64
+          - image: centreon-collect-debian-bullseye
+            distrib: bullseye
+            package_extension: deb
+            runner: collect
+            arch: amd64
+          - image: centreon-collect-debian-bookworm
+            distrib: bookworm
+            package_extension: deb
+            runner: collect
+            arch: amd64
+          - image: centreon-collect-ubuntu-jammy
+            distrib: jammy
+            package_extension: deb
+            runner: collect
+            arch: amd64
+          - image: centreon-collect-debian-bullseye-arm64
+            distrib: bullseye
+            package_extension: deb
+            runner: collect-arm64
+            arch: arm64
+
+    runs-on: ${{ fromJson(format('["self-hosted", "{0}"]', matrix.runner)) }}
+
+    env:
+      SCCACHE_PATH: "/usr/bin/sccache"
+      SCCACHE_BUCKET: "centreon-github-sccache"
+      SCCACHE_REGION: "eu-west-1"
+      AWS_ACCESS_KEY_ID: ${{ secrets.COLLECT_S3_ACCESS_KEY }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.COLLECT_S3_SECRET_KEY }}
+
+    container:
+      image: ${{ vars.DOCKER_INTERNAL_REGISTRY_URL }}/${{ matrix.image }}:${{ inputs.img_version }}
+      credentials:
+        username: ${{ secrets.DOCKER_REGISTRY_ID }}
+        password: ${{ secrets.DOCKER_REGISTRY_PASSWD }}
+
+    name: package ${{ matrix.distrib }} ${{ matrix.arch }}
+
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+
+      - name: Install sccache
+        run: |
+          if [ "${{ matrix.package_extension }}" = "deb" ]; then
+            apt-get update
+            apt-get install -y wget
+          elif [ "${{ matrix.package_extension }}" = "rpm" ]; then
+            dnf install -y wget
+          fi
+          if [ "${{ matrix.arch }}" = "amd64" ]; then
+            wget https://github.com/mozilla/sccache/releases/download/v0.7.4/sccache-v0.7.4-x86_64-unknown-linux-musl.tar.gz
+            tar xzf sccache-v0.7.4-x86_64-unknown-linux-musl.tar.gz
+            mv sccache-v0.7.4-x86_64-unknown-linux-musl/sccache /usr/bin/
+          elif [ "${{ matrix.arch }}" = "arm64" ]; then
+            wget https://github.com/mozilla/sccache/releases/download/v0.7.4/sccache-v0.7.4-aarch64-unknown-linux-musl.tar.gz
+            tar xzf sccache-v0.7.4-aarch64-unknown-linux-musl.tar.gz
+            mv sccache-v0.7.4-aarch64-unknown-linux-musl/sccache /usr/bin/
+          fi
+          ${SCCACHE_PATH} --start-server
+
+      - name: Generate selinux binaries
+        if: ${{ matrix.package_extension == 'rpm' }}
+        run: |
+          cd selinux
+          for MODULE in "centreon-engine" "centreon-broker"; do
+            cd $MODULE
+            sed -i "s/@VERSION@/${{ inputs.version }}/g" $MODULE.te
+            make -f /usr/share/selinux/devel/Makefile
+            cd -
+          done
+        shell: bash
+
+      - name: Remove selinux packaging files on debian
+        if: ${{ matrix.package_extension == 'deb' }}
+        run: rm -f packaging/*-selinux.yaml
+        shell: bash
+
+      - name: Compile sources
+        run: |
+          CMAKE="cmake3"
+          if [ "${{ matrix.package_extension }}" = "deb" ]; then
+            CMAKE="cmake"
+          fi
+
+          if [ "${{ matrix.arch }}" = "arm64" ]; then
+            export VCPKG_FORCE_SYSTEM_BINARIES=1
+            export TRIPLET=arm64-linux-release
+          else
+            export TRIPLET=x64-linux-release
+          fi
+
+          mv /root/.cache /github/home/
+          export VCPKG_ROOT="/vcpkg"
+          export PATH="$VCPKG_ROOT:$PATH"
+          $CMAKE \
+                  -B build \
+                  -DVCPKG_OVERLAY_TRIPLETS=/custom-triplets \
+                  -DVCPKG_TARGET_TRIPLET=$TRIPLET \
+                  -DVCPKG_OVERLAY_PORTS=/overlays \
+                  -GNinja \
+                  -DDEBUG_ROBOT=OFF \
+                  -DWITH_TESTING=OFF \
+                  -DWITH_BENCH=ON \
+                  -DWITH_MODULE_SIMU=OFF \
+                  -DCMAKE_INSTALL_PREFIX=/usr \
+                  -DWITH_STARTUP_SCRIPT=systemd \
+                  -DWITH_ENGINE_LOGROTATE_SCRIPT=ON \
+                  -DWITH_USER_BROKER=centreon-broker \
+                  -DWITH_GROUP_BROKER=centreon-broker \
+                  -DWITH_USER_ENGINE=centreon-engine \
+                  -DWITH_GROUP_ENGINE=centreon-engine \
+                  -DWITH_VAR_DIR=/var/log/centreon-engine \
+                  -DWITH_DAEMONS=ON \
+                  -DWITH_CREATE_FILES=OFF \
+                  -DWITH_CONFIG_FILES=ON \
+                  -DCMAKE_BUILD_TYPE=RelWithDebInfo \
+                  -DCMAKE_C_COMPILER_LAUNCHER=${SCCACHE_PATH} \
+                  -DCMAKE_CXX_COMPILER_LAUNCHER=${SCCACHE_PATH} \
+                  -S .
+
+          ninja -Cbuild
+        shell: bash
+
+      - name: Cache statistics
+        run: ${SCCACHE_PATH} --show-stats
+        shell: bash
+
+      - name: Stop sccache server
+        run: ${SCCACHE_PATH} --stop-server
+        shell: bash
+
+      - name: Generate debug files
+        run: |
+          for file in $(find build/{broker,engine,clib,connectors} -name '*.so' -type f); do
+            echo "Making a debug file of $file"
+            objcopy --only-keep-debug $file $file.debug
+            objcopy --strip-debug $file
+            objcopy --add-gnu-debuglink $file.debug $file
+          done
+          exe=("build/broker/cbd"
+               "build/broker/watchdog/cbwd"
+               "build/engine/centengine"
+               "build/engine/centenginestats"
+               "build/engine/modules/bench/centengine_bench_passive"
+               "build/connectors/perl/centreon_connector_perl"
+               "build/connectors/ssh/centreon_connector_ssh"
+               "build/ccc/ccc")
+          for file in ${exe[@]}; do
+            echo "Making a debug file of $file"
+            objcopy --only-keep-debug $file $file.debug
+            objcopy --strip-debug $file
+            objcopy --add-gnu-debuglink $file.debug $file
+          done
+        shell: bash
+
+      - uses: ./.github/actions/package
+        with:
+          nfpm_file_pattern: "packaging/*.yaml"
+          distrib: ${{ matrix.distrib }}
+          package_extension: ${{ matrix.package_extension }}
+          version: ${{ inputs.version }}
+          release: ${{ inputs.release }}
+          arch: ${{ matrix.arch }}
+          commit_hash: ${{ inputs.commit_hash }}
+          cache_key: ${{ github.run_id }}-${{ github.sha }}-${{ matrix.package_extension}}-centreon-collect-${{ matrix.distrib }}-${{ matrix.arch }}-${{ github.head_ref || github.ref_name }}
+          rpm_gpg_key: ${{ secrets.RPM_GPG_SIGNING_KEY }}
+          rpm_gpg_signing_key_id: ${{ secrets.RPM_GPG_SIGNING_KEY_ID }}
+          rpm_gpg_signing_passphrase: ${{ secrets.RPM_GPG_SIGNING_PASSPHRASE }}
+          stability: ${{ inputs.stability }}
+
+      - name: Cleaning not needed packages
+        shell: bash
+        run: rm -rf *-debuginfo*.${{ matrix.package_extension }}
+
+      # set condition to true if artifacts are needed
+      - if: ${{ false }}
+        name: Upload package artifacts
+        uses: actions/upload-artifact@26f96dfa697d77e81fd5907df203aa23a56210a8 # v4.3.0
+        with:
+          name: packages-${{ matrix.distrib }}-${{ matrix.arch }}
+          path: ./*.${{ matrix.package_extension}}
+          retention-days: 1

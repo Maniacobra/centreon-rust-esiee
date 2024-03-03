@@ -1,0 +1,185 @@
+# Veracode scans
+on:
+  workflow_call:
+    inputs:
+      module_name:
+        required: true
+        type: string
+      major_version:
+        required: true
+        type: string
+      minor_version:
+        required: true
+        type: string
+      img_version:
+        required: true
+        type: string
+    secrets:
+      veracode_api_id:
+        required: true
+      veracode_api_key:
+        required: true
+      veracode_srcclr_token:
+        required: true
+      docker_registry_id:
+        required: true
+      docker_registry_passwd:
+        required: true
+
+jobs:
+  routing:
+    name: Check before analysis
+    runs-on: ubuntu-latest
+    outputs:
+      development_stage: ${{ steps.routing-mode.outputs.development_stage }}
+
+    steps:
+      - name: Set routing mode
+        id: routing-mode
+        run: |
+          DEVELOPMENT_STAGE="Development"
+
+          ALLOWED_BRANCHES=(develop master dev-${{ inputs.major_version }}.x ${{ inputs.major_version }}.x)
+          for BRANCH in "${ALLOWED_BRANCHES[@]}"; do
+            if [[ "${{ github.ref_name }}" == "$BRANCH" ]] && [[ '${{ github.event_name }}' != 'pull_request' ]]; then
+              DEVELOPMENT_STAGE="Release"
+            fi
+          done
+
+          echo "development_stage=$DEVELOPMENT_STAGE" >> $GITHUB_OUTPUT
+          cat $GITHUB_OUTPUT
+
+  build:
+    name: Binary preparation
+    runs-on: [self-hosted, collect]
+    needs: [routing]
+    if: needs.routing.outputs.development_stage != 'Development'
+    container:
+      image: ${{ vars.DOCKER_INTERNAL_REGISTRY_URL }}/centreon-collect-alma9:${{ inputs.img_version }}
+      credentials:
+        username: ${{ secrets.docker_registry_id }}
+        password: ${{ secrets.docker_registry_passwd }}
+
+    steps:
+      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+
+      - name: Compiling Cpp sources
+        run: |
+          mv /root/.cache /github/home
+          export VCPKG_ROOT=/vcpkg
+          export PATH=$VCPKG_ROOT:$PATH
+          rm -rf build
+          cmake \
+            -B build \
+            -DVCPKG_OVERLAY_TRIPLETS=/custom-triplets \
+            -DVCPKG_TARGET_TRIPLET=x64-linux-release \
+            -DVCPKG_OVERLAY_PORTS=/overlays \
+            -S . \
+            -GNinja \
+            -DCMAKE_CXX_FLAGS="-gdwarf-2 -g3 -O0 -fno-builtin" \
+            -DDEBUG_ROBOT=OFF \
+            -DWITH_TESTING=OFF \
+            -DWITH_BENCH=OFF \
+            -DWITH_MODULE_SIMU=OFF \
+            -DCMAKE_INSTALL_PREFIX=/usr \
+            -DWITH_STARTUP_SCRIPT=systemd \
+            -DWITH_ENGINE_LOGROTATE_SCRIPT=ON \
+            -DWITH_USER_BROKER=centreon-broker \
+            -DWITH_GROUP_BROKER=centreon-broker \
+            -DWITH_USER_ENGINE=centreon-engine \
+            -DWITH_GROUP_ENGINE=centreon-engine \
+            -DWITH_VAR_DIR=/var/log/centreon-engine \
+            -DWITH_DAEMONS=ON \
+            -DWITH_CREATE_FILES=OFF \
+            -DWITH_CONFIG_FILES=ON \
+            -DNG=ON
+
+          ninja -Cbuild
+
+          echo "[DEBUG] - Find compiled files"
+          find build/{broker,engine,clib,connectors,common} -name "*.so" -type f
+          echo "[DEBUG] - Build size"
+          du -sh $(find build/{broker,engine,clib,connectors,common} -name "*.so" -type f) | sort -rh
+
+      - name: Binary preparation
+        run: |
+          echo "[INFO] - Keeping only compiled files"
+          # preserve binaries from cleaning
+          find build -type f -not \( -name "*.so" -or -name "cbd" -or -name "centengine" -or -name "cbwd" -or -name "centreon_connector_*" \) -delete
+
+          echo "[INFO] - Removing veracode exclusions"
+            if [[ -f ".veracode-exclusions" ]]; then
+            for LINE in $( cat .veracode-exclusions | sed 's/[^a-zA-Z0-9_./-]//g' | sed -r 's/\.\./\./g' ); do
+              if [[ -d "$LINE" ]]; then
+                rm -rf "$LINE"
+                echo "[INFO] - folder removed from analysis : '$LINE'"
+              elif [[ -e "$LINE" ]]; then
+                rm -f "$LINE"
+                echo "[INFO] - file removed from analysis : '$LINE'"
+              elif [[ -z "$LINE" ]]; then
+                echo "[INFO] - empty directive. Skipping this line"
+              else
+                echo "::warning::Target to exclude from analysis not found. Skipping: '$LINE'"
+              fi
+            done
+          else
+            echo "::warning::No '.veracode-exclusions' file found for this module. Skipping exclusion step"
+          fi
+          echo "[INFO] - Keeping only build's non empty folders"
+          find build -empty -type d -delete
+          ls -la build
+
+          echo "[INFO] - Generating the tarball"
+          tar cvzf "${{ inputs.module_name }}-${{ github.sha }}-${{ github.run_id }}-veracode-binary.tar.gz" build
+
+      - name: Cache
+        uses: actions/cache/save@13aacd865c20de90d75de3b17ebe84f7a17d57d2 # v4.0.0
+        with:
+          path: "${{ inputs.module_name }}-${{ github.sha }}-${{ github.run_id }}-veracode-binary.tar.gz"
+          key: "${{ inputs.module_name }}-${{ github.sha }}-${{ github.run_id }}-veracode-binary"
+
+  policy-scan:
+    name: Sandbox scan
+    needs: [routing, build]
+    if: needs.routing.outputs.development_stage != 'Development'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Promote latest scan
+        # only develop will be promoted to policy scan
+        if: github.ref_name == 'develop'
+        env:
+          VERACODE_API_ID: "${{ secrets.veracode_api_id }}"
+          VERACODE_API_SECRET: "${{ secrets.veracode_api_key }}"
+
+        # Action forked as API calls hardcoded '.com' route
+        uses: sc979/veracode-sandboxes-helper@cf67241c27cbe6405ad8705111121ece9a48c4ff # v0.2
+        # Promote should not fail to trigger following sandbox scan.
+        continue-on-error: true
+        with:
+          activity: "promote-latest-scan"
+          app-name: "${{ inputs.module_name }}"
+          sandbox-name: "${{ github.ref_name }}"
+          delete-on-promote: false
+
+      - name: Get build binary
+        uses: actions/cache/restore@13aacd865c20de90d75de3b17ebe84f7a17d57d2 # v4.0.0
+        with:
+          path: "${{ inputs.module_name }}-${{ github.sha }}-${{ github.run_id }}-veracode-binary.tar.gz"
+          key: "${{ inputs.module_name }}-${{ github.sha }}-${{ github.run_id }}-veracode-binary"
+
+      - name: Sandbox scan
+        uses: veracode/veracode-uploadandscan-action@0.2.6
+        continue-on-error: ${{ vars.VERACODE_CONTINUE_ON_ERROR == 'true' }}
+        with:
+          appname: "${{ inputs.module_name }}"
+          version: "${{ inputs.major_version }}.${{ inputs.minor_version }}_runId-${{ github.run_id }}"
+          filepath: "${{ inputs.module_name }}-${{ github.sha }}-${{ github.run_id }}-veracode-binary.tar.gz"
+          vid: "vera01ei-${{ secrets.veracode_api_id }}"
+          vkey: "vera01es-${{ secrets.veracode_api_key }}"
+          createprofile: true
+          createsandbox: true
+          sandboxname: "${{ github.ref_name }}"
+          includenewmodules: true
+          scanallnonfataltoplevelmodules: true
+          deleteincompletescan: 2

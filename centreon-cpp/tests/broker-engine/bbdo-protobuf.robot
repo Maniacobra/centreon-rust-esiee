@@ -168,15 +168,15 @@ BEPBCVS
         ${output}    Query
         ...    SELECT c.value FROM customvariables c LEFT JOIN hosts h ON c.host_id=h.host_id WHERE h.name='host_1' && c.name in ('KEY1','KEY_SERV1_1') ORDER BY service_id
         Log To Console    ${output}
-        Sleep    1s
         IF    "${output}" == "(('VAL1',), ('VAL_SERV1',))"    BREAK
+        Sleep    1s
     END
     Should Be Equal As Strings    ${output}    (('VAL1',), ('VAL_SERV1',))
 
     [Teardown]    Stop Engine Broker And Save Logs    True
 
 BEPB_HOST_DEPENDENCY                                                            
-    [Documentation]    bbdo_version 3 communication of host dependencies.       
+    [Documentation]    BBDO 3 communication of host dependencies.       
     [Tags]    broker    engine    protobuf    bbdo                              
     Config Engine    ${1}                                                       
     Config Engine Add Cfg File    0    dependencies.cfg                         
@@ -191,7 +191,7 @@ BEPB_HOST_DEPENDENCY
     Start Broker    True                                                        
     Start Engine                                                                
                                                                                 
-    ${result}    Common.Check Host Dependencies    2    1        24x7    1   ou    ${EMPTY}    30
+    ${result}    Common.Check Host Dependencies    2    1        24x7    1   ou    dp    30
     Should Be True    ${result}    No notification dependency from 2 to 1 with timeperiod 24x7 on 'ou'
                                                                                 
     Config Engine    ${1}                                                       
@@ -244,5 +244,45 @@ BEPB_SERVICE_DEPENDENCY
         IF    "${output}" == "()"    BREAK
     END
     Should Be Equal As Strings    ${output}    ()    host dependency not deleted from database
+
+    [Teardown]    Stop Engine Broker And Save Logs    True
+
+BEPBHostParent
+    [Documentation]    bbdo_version 3 communication of host parent relations
+    [Tags]    broker    engine    protobuf    bbdo
+    Config Engine    ${1}
+    Add Parent To Host    0    host_1    host_2
+    Config Broker    central
+    Config BBDO3    ${1}
+    Broker Config Log    central    sql    trace
+    Config Broker Sql Output    central    unified_sql
+    Clear Retention
+    ${start}    Get Current Date
+    Start Broker    True
+    Start Engine
+    Connect To Database    pymysql    ${DBName}    ${DBUser}    ${DBPass}    ${DBHost}    ${DBPort}
+
+    FOR    ${index}    IN RANGE    30
+        ${output}    Query
+        ...    SELECT child_id, parent_id FROM hosts_hosts_parents
+        Log To Console    ${output}
+        Sleep    1s
+        IF    "${output}" == "((1, 2),)"    BREAK
+    END
+    Should Be Equal As Strings    ${output}    ((1, 2),)    host parent not inserted
+
+    # remove host
+    Config Engine    ${1}
+    Reload Broker    True
+    Reload Engine
+
+    FOR    ${index}    IN RANGE    30
+        ${output}    Query
+        ...    SELECT child_id, parent_id FROM hosts_hosts_parents
+        Log To Console    ${output}
+        Sleep    1s
+        IF    "${output}" == "()"    BREAK
+    END
+    Should Be Equal As Strings    ${output}    ()    host parent not deleted
 
     [Teardown]    Stop Engine Broker And Save Logs    True
