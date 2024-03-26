@@ -1,12 +1,31 @@
 use tonic::transport::Channel;
-//use tonic::Request;
+use tonic::Request;
 use tonic_reflection::pb::server_reflection_client::ServerReflectionClient;
-//use tonic_reflection::pb::ServerReflectionRequest;
+use tonic_reflection::pb::ServerReflectionRequest;
+use futures_util::stream;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
-    let mut _client = ServerReflectionClient::new(Channel::from_static("http://localhost:51001").connect().await?);
+    let mut client = ServerReflectionClient::new(Channel::from_static("http://localhost:6463").connect().await?);
+
+    let request = ServerReflectionRequest {
+        // Set the desired fields of the request
+        host: "localhost".into(),
+        message_request: Some(tonic_reflection::pb::server_reflection_request::MessageRequest::ListServices("".into())),
+    };
+
+    let request_stream = stream::iter(vec![request]);
+    let response = client.server_reflection_info(Request::new(request_stream)).await?;
+
+    // response is a Stream of ServerReflectionResponse messages
+    let mut inbound = response.into_inner();
+
+    // Process each response from the server (assuming there might be more than one for illustration)
+    while let Some(response) = inbound.message().await? {
+        // Process the response here
+        println!("{:?}", response);
+    }
 
     Ok(())
 }
