@@ -45,7 +45,7 @@ const char* color(bool enabled) {
 
 class client {
   enum type { CCC_NONE, CCC_BROKER, CCC_ENGINE };
-  std::unique_ptr<grpc::GenericStub> _stub;
+  std::unique_ptr<grpc::GenericStub> _stub; // client central
   type _server;
   bool _color_enabled;
   grpc::CompletionQueue _cq;
