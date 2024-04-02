@@ -29,8 +29,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let request = ServerReflectionRequest {
         // Set the desired fields of the request
         host: "".into(),
-        message_request: Some(tonic_reflection::pb::server_reflection_request::MessageRequest::ListServices(String::new())),
+        message_request: Some(tonic_reflection::pb::server_reflection_request::MessageRequest::FileContainingSymbol("com.centreon.broker.Broker".to_string())),
     };
+
     let request = Request::new(tokio_stream::once(request));
 
     let mut inbound = client
@@ -38,12 +39,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .await
         .unwrap()
         .into_inner();
-
-    let response = inbound
-        .next()
-        .await
-        .unwrap().unwrap()
-        .message_response;
 
     // Process each response from the server (assuming there might be more than one for illustration)
     while let Some(response) = inbound.message().await? {
