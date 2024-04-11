@@ -13,9 +13,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         name: "Tonic".into(),
     });
 
-    let test = (4, "abc");
-    dbg!(test);
-
     let response = client.say_hello(request).await?;
 
     println!("RESPONSE={:?}", response);
