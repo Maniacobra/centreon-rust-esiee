@@ -1,7 +1,7 @@
 syntax = "proto3";
 
 import "google/protobuf/empty.proto";
-import "broker/process_stat.proto";
+import "process_stat.proto";
 
 package com.centreon.broker;
 

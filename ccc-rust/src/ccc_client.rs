@@ -8,8 +8,7 @@ pub mod broker {
 
 use broker::broker_client::BrokerClient;
 
-#[tokio::main]
-async fn main() -> Result<(), Box<dyn std::error::Error>> {
+pub async fn get_version() -> Result<(), Box<dyn std::error::Error>> {
 
     let mut client = BrokerClient::connect("http://[::1]:51001").await?;
 
