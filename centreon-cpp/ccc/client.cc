@@ -325,7 +325,7 @@ static void message_description(const google::protobuf::Descriptor* desc,
  *
  * @return A string with the method informations.
  */
-std::string client::info_method(const std::string& cmd) const {
+std::string client::info_method(const std::string& cmd) const { // Équivalent du --help <méthode>
   std::string retval;
   const google::protobuf::DescriptorPool* p =
       google::protobuf::DescriptorPool::generated_pool();
