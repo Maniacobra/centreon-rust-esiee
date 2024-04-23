@@ -7,29 +7,54 @@ pub mod broker {
 }
 
 use broker::broker_client::BrokerClient;
+use broker::*;
 
-pub async fn get_version() -> Result<(), Box<dyn std::error::Error>> {
+#[tokio::main]
+pub async fn send_message(pid: u32, method: &str) -> Result<(), Box<dyn std::error::Error>> {
 
-    let mut client = BrokerClient::connect("http://[::1]:51001").await?;
-
+    let mut client = BrokerClient::connect(format!("http://[::1]:{}", pid)).await?;
     let request = tonic::Request::new(());
 
-    let response = client.get_version(request).await?;
+    macro_rules! send_request {
+        ($function:ident) => {{
+            let response = client.$function(request).await?;
+            let msg_response = response.into_inner();
+            println!("{:?}", msg_response);
+        }};
+    }
 
-    println!("Response: {:?}", response.into_inner());
+    match method {
+        "GetVersion" => send_request!(get_version),
+        "GetProcessStats" => send_request!(get_process_stats),
+        "GetGenericStats" => send_request!(get_generic_stats),
+        "GetConflictManagerStats" => send_request!(get_conflict_manager_stats),
+        "GetNumModules" => send_request!(get_num_modules),
+        "GetNumEndpoint" => send_request!(get_num_endpoint),
+        "GetProcessingStats" => send_request!(get_processing_stats),
+        _ => {
+            eprintln!("Unknown method '{}'", method)
+        }
+    }
 
     Ok(())
 }
 
+/////////////////////////////// FONCTION DE TEST
 
-#[derive(Debug)]
-struct MyStruct {
-    // Define your struct fields here
-    name: String,
-    age: u32,
-}
+#[tokio::main]
+pub async fn send_message_with_params(pid: u32, method: &str, json_params: &str) -> Result<(), Box<dyn std::error::Error>> {
 
+    let mut client = BrokerClient::connect(format!("http://[::1]:{}", pid)).await?;
 
+    let msg = GenericNameOrIndex {
+        name_or_index: Some(generic_name_or_index::NameOrIndex::Idx((0)))
+    };
 
-
+    let request = tonic::Request::new(msg);
     
+    let response = client.get_modules_stats(request).await?;
+    
+    println!("Response: {:?}", response.into_inner());
+
+    Ok(())
+}
