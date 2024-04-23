@@ -1,10 +1,12 @@
-
 extern crate getopts;
 extern crate colored;
 use getopts::Options;
 use colored::*;
 use std::env;
 use std::process::ExitCode;
+
+mod ccc_client;
+use ccc_client::*;
 
 fn long_options()-> Options{
 	let mut opts = Options::new();
@@ -18,7 +20,7 @@ fn long_options()-> Options{
 }
 
 fn usage(opts:Options, program:String, color_enabled:bool) {
-	if color_enabled{
+	if color_enabled {
 		let brief = format!("{}: {} [options]","Usage".blue(), program);
 			println!("'ccc' uses centreon-broker or centreon-engine gRPC api to communicate with them");
 			print!("{}", opts.usage(&brief));
@@ -41,16 +43,15 @@ fn usage(opts:Options, program:String, color_enabled:bool) {
 fn main() -> ExitCode  {
 	let args: Vec<_> = env::args().collect();
 	let program = args[0].clone();
-
 	
-	let mut port:i32 = 0;
+	let mut port:u32 = 0;
 	
 	let mut list:bool = false;
 	let mut help:bool = false;
 	let mut color_enabled:bool = true;
-	let mut command="";
+	let mut command:String = String::new();
 	
-	let opts:Options=long_options();
+	let opts:Options = long_options();
 	let matches = match opts.parse(&args[1..]) {
         Ok(m) => { m }
         Err(f) => { eprintln!("Unrecognized argument '{}'",f.to_string());panic!("error") }
@@ -59,41 +60,31 @@ fn main() -> ExitCode  {
         println!("ccc");
     }
 	if matches.opt_present("n") {
-        color_enabled=false;
+        color_enabled = false;
     }
 	if matches.opt_present("l") {
-        list=true;
+        list = true;
     }
 	if matches.opt_present("p") {
-		port=matches.opt_get("p").unwrap().unwrap();
+		port = matches.opt_get("p").unwrap().unwrap();
 	}
 	if matches.opt_present("c") {
-		command=matches.opt_get("c").unwrap().unwrap();
+		command = matches.opt_get("c").unwrap().unwrap();
 	}
 	if matches.opt_present("h") {
-        help=true;
+        help = true;
     }
 	
-	if help{
+	if help {
 		usage(opts,program,color_enabled);
 		return ExitCode::SUCCESS;
 	}
-	if port==0{
+	if port == 0 { // fix tempo car le port est pas recup
 		eprintln!("You must specify a port for the connection to the gRPC server");
-		//exit(2);
 		return ExitCode::from(2);
 	}
-	let mut address : String = ToString::to_string("127.0.0.1:");
-    address.push_str(&port.to_string());
-    let channel = Channel::from_shared(address.clone());
-    println!("address : {:?}", address);
-	
-	
-	
-	if help{
-		usage(opts,program,color_enabled);
-		return ExitCode::SUCCESS;
-	}
+
+	//get_version().await;
+
 	return ExitCode::SUCCESS;
-    println!("Hello, world!");
 }
