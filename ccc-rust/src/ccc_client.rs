@@ -20,3 +20,16 @@ pub async fn get_version() -> Result<(), Box<dyn std::error::Error>> {
 
     Ok(())
 }
+
+
+#[derive(Debug)]
+struct MyStruct {
+    // Define your struct fields here
+    name: String,
+    age: u32,
+}
+
+
+
+
+    
