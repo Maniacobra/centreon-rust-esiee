@@ -73,7 +73,7 @@ pub async fn send_sql_connection(
 ) -> Result<(), Box<dyn std::error::Error>> {
     let mut client = BrokerClient::connect(format!("http://[::1]:{}", pid)).await?;
 
-    let msg = SqlConnection { id: Some(1) };
+    let msg = broker::SqlConnection { id: Some(1) };
 
     let request = tonic::Request::new(msg);
 
