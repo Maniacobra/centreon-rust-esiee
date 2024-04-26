@@ -77,7 +77,7 @@ pub async fn send_sql_connection(
 
     let request = tonic::Request::new(msg);
 
-    let response = client.get_sql_connection(request).await?;
+    let response = client.get_sql_manager_stats(request).await?;
 
     println!("Response: {:?}", response.into_inner());
 
