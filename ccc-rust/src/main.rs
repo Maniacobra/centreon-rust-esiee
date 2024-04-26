@@ -10,6 +10,7 @@ use tokio::runtime::Runtime;
 
 mod ccc_client;
 use ccc_client::send_message;
+use ccc_client::send_message_with_sql_params;
 
 fn long_options() -> Options {
     let mut opts = Options::new();
