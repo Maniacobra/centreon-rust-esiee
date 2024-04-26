@@ -59,10 +59,6 @@ use prost_serde::build_with_serde;
 
 #[allow(dead_code)]
 fn main() -> ExitCode {
-    let json = include_str!("test.json");
-    build_with_serde(json).output.unwrap();
-    println!("JSON: {}", json);
-
     let args: Vec<_> = env::args().collect();
     let program = args[0].clone();
 
