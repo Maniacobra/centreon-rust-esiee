@@ -69,6 +69,7 @@ pub async fn send_message_with_params(
     Ok(())
 }
 
+#[tokio::main]
 pub async fn send_message_with_sql_params(
     pid: u32,
     method: &str,
