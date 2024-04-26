@@ -8,6 +8,7 @@ pub mod broker {
 
 use broker::broker_client::BrokerClient;
 use broker::*;
+use prost::Message;
 
 #[tokio::main]
 pub async fn send_message(pid: u32, method: &str) -> Result<(), Box<dyn std::error::Error>> {
@@ -39,6 +40,7 @@ pub async fn send_message(pid: u32, method: &str) -> Result<(), Box<dyn std::err
 }
 
 /////////////////////////////// FONCTION DE TEST
+#[derive(Clone, PartialEq, ::prost::Message)]
 
 pub struct SqlConnection {
     #[prost(uint32, optional, tag = "1")]
