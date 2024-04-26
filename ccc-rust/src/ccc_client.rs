@@ -31,8 +31,7 @@ pub async fn send_message(pid: u32, method: &str) -> Result<(), Box<dyn std::err
         "GetNumModules" => send_request!(get_num_modules),
         "GetNumEndpoint" => send_request!(get_num_endpoint),
         "GetProcessingStats" => send_request!(get_processing_stats),
-
-        _ => {
+                _ => {
             eprintln!("Unknown method '{}'", method)
         }
     }

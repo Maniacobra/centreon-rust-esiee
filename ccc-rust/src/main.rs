@@ -119,7 +119,7 @@ fn main() -> ExitCode {
         }
     }
 
-    let result_sql_params = send_message_with_sql_params(port, command.as_str(), "");
+    let result_sql_params = send_message_with_sql_params(port, command.as_str(), "GetSqlManagerStats");
     match result_sql_params {
         Ok(_) => (),
         Err(e) => {
