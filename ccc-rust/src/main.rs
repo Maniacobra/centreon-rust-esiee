@@ -117,5 +117,15 @@ fn main() -> ExitCode {
         }
     }
 
+    let result_sql_params = send_message_with_sql_params(port, command.as_str(), "");
+    match result_sql_params {
+        Ok(_) => (),
+        Err(e) => {
+            eprintln!("\n---- ERROR ----\n");
+            eprintln!("{:?}", e);
+            eprintln!();
+        }
+    }
+
     return ExitCode::SUCCESS;
 }

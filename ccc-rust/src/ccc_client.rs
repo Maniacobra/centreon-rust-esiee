@@ -31,6 +31,7 @@ pub async fn send_message(pid: u32, method: &str) -> Result<(), Box<dyn std::err
         "GetNumModules" => send_request!(get_num_modules),
         "GetNumEndpoint" => send_request!(get_num_endpoint),
         "GetProcessingStats" => send_request!(get_processing_stats),
+
         _ => {
             eprintln!("Unknown method '{}'", method)
         }
@@ -68,7 +69,7 @@ pub async fn send_message_with_params(
     Ok(())
 }
 
-pub async fn send_sql_connection(
+pub async fn send_message_with_sql_params(
     pid: u32,
     method: &str,
     json_params: &str,
