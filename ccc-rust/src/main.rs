@@ -115,6 +115,7 @@ fn main() -> ExitCode {
             eprintln!("\n---- ERROR ----\n");
             eprintln!("{:?}", e);
             eprintln!();
+            return ExitCode::from(1);
         }
     }
 
@@ -125,8 +126,9 @@ fn main() -> ExitCode {
             eprintln!("\n---- ERROR ----\n");
             eprintln!("{:?}", e);
             eprintln!();
+            return ExitCode::from(1);
         }
     }
 
-    return ExitCode::SUCCESS;
+    ExitCode::SUCCESS
 }
