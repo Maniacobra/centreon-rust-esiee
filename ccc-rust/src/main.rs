@@ -219,7 +219,10 @@ fn main() -> ExitCode {
         "log_info" => {
             |pid, method, json_params| send_message_get_log_info(pid, method, json_params);
         }
-        _ => return ExitCode::from(1),
+        _ => {
+            eprintln!("Unknown command msg_fn: {}", command);
+            return ExitCode::from(1);
+        }
     };
     ExitCode::SUCCESS
 }
