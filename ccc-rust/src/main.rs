@@ -202,22 +202,22 @@ fn main() -> ExitCode {
     */
     let msg_fn = match command.as_str() {
         "module_stats" => {
-            |pid, method, json_params| send_message_get_module_stats(pid, method, json_params);
+            send_message_get_module_stats(port, command.as_str(), command.as_str());
         }
         "sql_manager_stats" => {
-            |pid, method, json_params| send_message_get_sql_manager_stats(pid, method, json_params);
+            send_message_get_sql_manager_stats(port, command.as_str(), command.as_str());
         }
         "muxer_stats" => {
-            |pid, method, json_params| send_message_get_muxer_stats(pid, method, json_params);
+            send_message_get_muxer_stats(port, command.as_str(), command.as_str());
         }
         "end_point_stats" => {
-            |pid, method, json_params| send_message_getEndPointStats(pid, method, json_params);
+            send_message_getEndPointStats(port, command.as_str(), command.as_str());
         }
         "ba" => {
-            |pid, method, json_params| send_message_get_Ba(pid, method, json_params);
+            send_message_get_Ba(port, command.as_str(), command.as_str());
         }
         "log_info" => {
-            |pid, method, json_params| send_message_get_log_info(pid, method, json_params);
+            send_message_get_log_info(port, command.as_str(), command.as_str());
         }
         _ => {
             eprintln!("Unknown command msg_fn: {}", command);
