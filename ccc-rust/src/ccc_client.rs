@@ -183,6 +183,7 @@ pub async fn send_message_get_log_info(
     method: &str,
     json_params: &str,
 ) -> Result<(), Box<dyn std::error::Error>> {
+    /*/
     let json_str = r#"{"str_arg":"hellowrold"}"#;
 
     // Deserialize the JSON string into an instance of MyObject
@@ -191,12 +192,13 @@ pub async fn send_message_get_log_info(
     // Access the fields of the deserialized object
     println!("str_arg: {}", my_object.str_arg);
     println!("test");
+    */
     let mut client = BrokerClient::connect(format!("http://[::1]:{}", pid)).await?;
 
     let msg = broker::GenericString {
-        str_arg: my_object.str_arg.to_string(),
+        // str_arg: my_object.str_arg.to_string(),
+        str_arg: "".to_string(),
     };
-    println!("test2");
 
     let request = tonic::Request::new(msg);
 
