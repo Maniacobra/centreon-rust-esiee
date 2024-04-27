@@ -10,7 +10,12 @@ use tokio::runtime::Runtime;
 
 mod ccc_client;
 use ccc_client::send_message;
-use ccc_client::send_message_with_sql_params;
+use ccc_client::send_message_getEndPointStats;
+use ccc_client::send_message_get_Ba;
+use ccc_client::send_message_get_log_info;
+use ccc_client::send_message_get_module_stats;
+use ccc_client::send_message_get_muxer_stats;
+use ccc_client::send_message_get_sql_manager_stats;
 
 fn long_options() -> Options {
     let mut opts = Options::new();
@@ -108,8 +113,18 @@ fn main() -> ExitCode {
     }
 
     // SENDING MESSAGE
-    let result = send_message(port, command.as_str());
-    match result {
+
+    /*
+    send_message(port,command.as_str());
+    send_message_get_module_stats(0, "GetModulesStats", "");
+    send_message_get_sql_manager_stats(0, "GetSqlManagerStats", "");
+    send_message_get_muxer_stats(0, "GetMuxerStats", "");
+    send_message_getEndPointStats(0, "GetEndpointStats", "");
+    send_message_get_Ba(0, "GetBa", "");
+    send_message_get_log_info(0, "GetLogInfo", "");
+    */
+    let result_send_message = send_message(port, command.as_str());
+    match result_send_message {
         Ok(_) => (),
         Err(e) => {
             eprintln!("\n---- ERROR ----\n");
@@ -119,9 +134,64 @@ fn main() -> ExitCode {
         }
     }
 
-    let result_sql_params =
-        send_message_with_sql_params(port, command.as_str(), "GetSqlManagerStats");
-    match result_sql_params {
+    let result_module_stats = send_message_get_module_stats(port, "GetModulesStats", "");
+    match result_module_stats {
+        Ok(_) => (),
+        Err(e) => {
+            eprintln!("\n---- ERROR ----\n");
+            eprintln!("{:?}", e);
+            eprintln!();
+            return ExitCode::from(1);
+        }
+    }
+
+    let result_sql_manager_stats =
+        send_message_get_sql_manager_stats(port, "GetSqlManagerStats", "");
+    match result_sql_manager_stats {
+        Ok(_) => (),
+        Err(e) => {
+            eprintln!("\n---- ERROR ----\n");
+            eprintln!("{:?}", e);
+            eprintln!();
+            return ExitCode::from(1);
+        }
+    }
+
+    let result_muxer_stats = send_message_get_muxer_stats(port, "GetMuxerStats", "");
+    match result_muxer_stats {
+        Ok(_) => (),
+        Err(e) => {
+            eprintln!("\n---- ERROR ----\n");
+            eprintln!("{:?}", e);
+            eprintln!();
+            return ExitCode::from(1);
+        }
+    }
+
+    let result_endpoint_stats = send_message_getEndPointStats(port, "GetEndpointStats", "");
+    match result_endpoint_stats {
+        Ok(_) => (),
+        Err(e) => {
+            eprintln!("\n---- ERROR ----\n");
+            eprintln!("{:?}", e);
+            eprintln!();
+            return ExitCode::from(1);
+        }
+    }
+
+    let result_ba = send_message_get_Ba(port, "GetBa", "");
+    match result_ba {
+        Ok(_) => (),
+        Err(e) => {
+            eprintln!("\n---- ERROR ----\n");
+            eprintln!("{:?}", e);
+            eprintln!();
+            return ExitCode::from(1);
+        }
+    }
+
+    let result_log_info = send_message_get_log_info(port, "GetLogInfo", "");
+    match result_log_info {
         Ok(_) => (),
         Err(e) => {
             eprintln!("\n---- ERROR ----\n");
