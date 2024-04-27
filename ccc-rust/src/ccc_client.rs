@@ -183,7 +183,7 @@ pub async fn send_message_get_log_info(
     method: &str,
     json_params: &str,
 ) -> Result<(), Box<dyn std::error::Error>> {
-    let json_str = r#"{"text:"hellowrold"}"#;
+    let json_str = r#"{"text":"hellowrold"}"#;
 
     // Deserialize the JSON string into an instance of MyObject
     let my_object: MyObject = serde_json::from_str(json_str).expect("Failed to deserialize JSON");
