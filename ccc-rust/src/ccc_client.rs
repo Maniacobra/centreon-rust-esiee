@@ -170,16 +170,31 @@ pub async fn send_message_get_Ba(
     Ok(())
 }
 
+#[derive(Debug, serde::Deserialize)]
+struct MyObject {
+    // Define your JSON structure fields here
+    str_arg: String,
+    // Add other fields as needed
+}
+
 #[tokio::main]
 pub async fn send_message_get_log_info(
     pid: u32,
     method: &str,
     json_params: &str,
 ) -> Result<(), Box<dyn std::error::Error>> {
+    let json_str = r#"{"text:"hellowrold"}"#;
+
+    // Deserialize the JSON string into an instance of MyObject
+    let my_object: MyObject = serde_json::from_str(json_str).expect("Failed to deserialize JSON");
+
+    // Access the fields of the deserialized object
+    println!("str_arg: {}", my_object.str_arg);
+
     let mut client = BrokerClient::connect(format!("http://[::1]:{}", pid)).await?;
 
     let msg = broker::GenericString {
-        str_arg: "".to_string(),
+        str_arg: my_object.str_arg.to_string(),
     };
 
     let request = tonic::Request::new(msg);
