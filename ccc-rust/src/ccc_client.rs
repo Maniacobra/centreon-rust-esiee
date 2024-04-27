@@ -190,12 +190,13 @@ pub async fn send_message_get_log_info(
 
     // Access the fields of the deserialized object
     println!("str_arg: {}", my_object.str_arg);
-
+    println!("test");
     let mut client = BrokerClient::connect(format!("http://[::1]:{}", pid)).await?;
 
     let msg = broker::GenericString {
         str_arg: my_object.str_arg.to_string(),
     };
+    println!("test2");
 
     let request = tonic::Request::new(msg);
 
