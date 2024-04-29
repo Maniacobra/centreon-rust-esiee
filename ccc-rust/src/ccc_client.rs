@@ -13,6 +13,7 @@ pub async fn send_message(pid: u32, method: &str) -> Result<(), Box<dyn std::err
         ($function:ident) => {{
             let response = client.$function(request).await?;
             let msg_response = response.into_inner();
+            println!("\n---- RESPONSE ----\n");
             println!("{:?}", msg_response);
         }};
     }
@@ -41,10 +42,15 @@ pub async fn send_message_with_data(pid: u32, method: &str, j_data: serde_json::
 
     macro_rules! send_request {
         ($function:ident, $data_type:ident) => {{
-            let msg = $data_type(j_data).unwrap();
-            let request = tonic::Request::new(msg);
+            let msg_opt = $data_type(j_data);
+            if msg_opt == None {
+                eprintln!("Invalid JSON for method {}", method);
+                return Ok(());
+            }
+            let request = tonic::Request::new(msg_opt.unwrap());
             let response = client.$function(request).await?;
             let msg_response = response.into_inner();
+            println!("\n---- RESPONSE ----\n");
             println!("{:?}", msg_response);
         }};
     }

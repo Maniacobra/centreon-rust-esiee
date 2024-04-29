@@ -66,7 +66,7 @@ fn usage(opts: Options, program: String, color_enabled: bool) {
     }
 }
 
-fn display_list() {
+fn display_list(color_enabled: bool) {
     // Recopier la liste qui s'affiche quand ccc -p 51001 -l
     todo!();
 }
@@ -94,13 +94,14 @@ fn main() -> ExitCode {
         }
     };
     if matches.opt_present("v") {
-        println!("ccc");
+        println!("ccc-rust_1.0");
+        return ExitCode::SUCCESS;
     }
     if matches.opt_present("n") {
         color_enabled = false;
     }
     if matches.opt_present("l") {
-        display_list();
+        display_list(color_enabled);
     }
     if matches.opt_present("p") {
         port = matches.opt_get("p").unwrap().unwrap();
@@ -151,8 +152,6 @@ fn main() -> ExitCode {
         eprintln!("Invalid characters in command : {cmd_str}");
         return ExitCode::from(1);
     }
-
-    println!("{cmd_str}");
 
     ////////////// SENDING MESSAGE
     
