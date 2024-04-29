@@ -67,8 +67,49 @@ fn usage(opts: Options, program: String, color_enabled: bool) {
 }
 
 fn display_list(color_enabled: bool) {
-    // Recopier la liste qui s'affiche quand ccc -p 51001 -l
-    todo!();
+    if color_enabled {
+        println!("{}:", "Available methods".blue());
+        println!(" GetVersion");
+        println!(" GetProcessStats");
+        println!(" GetGenericStats");
+        println!(" GetConflictManagerStats");
+        println!(" GetNumModules");
+        println!(" GetNumEndpoint");
+        println!(" GetProcessingStats");
+        println!(" SetSqlManagerStats");
+        println!(" GetSqlManagerStats");
+        println!(" GetMuxerStats");
+        println!(" GetModulesStats");
+        println!(" GetEndpointStats");
+        println!(" RebuildRRDGraphs");
+        println!(" GetBa");
+        println!(" RemoveGraphs");
+        println!(" RemovePollers");
+        println!(" GetLogInfo");
+        println!(" SetLogLevel");
+        println!(" SetLogFlushPeriod");
+    } else {
+        println!("Available methods:");
+        println!(" GetVersion");
+        println!(" GetProcessStats");
+        println!(" GetGenericStats");
+        println!(" GetConflictManagerStats");
+        println!(" GetNumModules");
+        println!(" GetNumEndpoint");
+        println!(" GetProcessingStats");
+        println!(" SetSqlManagerStats");
+        println!(" GetSqlManagerStats");
+        println!(" GetMuxerStats");
+        println!(" GetModulesStats");
+        println!(" GetEndpointStats");
+        println!(" RebuildRRDGraphs");
+        println!(" GetBa");
+        println!(" RemoveGraphs");
+        println!(" RemovePollers");
+        println!(" GetLogInfo");
+        println!(" SetLogLevel");
+        println!(" SetLogFlushPeriod");
+    }
 }
 
 #[allow(dead_code)]
