@@ -8,7 +8,8 @@ pub mod broker {
 
 use broker::*;
 
-pub fn extract_value(input: &str) -> Option<(String, String)> {
+pub fn extract_value(input: &str) -> Option<(String, String)>
+{
     let start_index = input.find('{');
     let end_index = input.find('}');
     
@@ -48,7 +49,8 @@ pub fn get_generic_string(j_data: serde_json::Value) -> Option<GenericString>
     Some(msg)
 }
 
-pub fn get_sql_manager_stats_options(j_data: serde_json::Value) -> Option<SqlManagerStatsOptions> {
+pub fn get_sql_manager_stats_options(j_data: serde_json::Value) -> Option<SqlManagerStatsOptions>
+{
     let slowest_statements_count = j_data.get("slowest_statements_count");
     let slowest_queries_count = j_data.get("slowest_queries_count");
 
@@ -65,7 +67,8 @@ pub fn get_sql_manager_stats_options(j_data: serde_json::Value) -> Option<SqlMan
     Some(msg)
 }
 
-pub fn get_sql_connection(j_data: serde_json::Value) -> Option<SqlConnection> {
+pub fn get_sql_connection(j_data: serde_json::Value) -> Option<SqlConnection>
+{
     let v_str = j_data.get("str");
 
     let msg = SqlConnection {
@@ -78,7 +81,8 @@ pub fn get_sql_connection(j_data: serde_json::Value) -> Option<SqlConnection> {
     Some(msg)
 }
 
-pub fn get_index_ids(j_data: serde_json::Value) -> Option<IndexIds> {
+pub fn get_index_ids(j_data: serde_json::Value) -> Option<IndexIds>
+{
     let v_ids = j_data.get("index_ids");
 
     let msg = IndexIds {
@@ -110,7 +114,8 @@ pub fn get_ba_info(j_data: serde_json::Value) -> Option<BaInfo>
     Some(msg)
 }
 
-pub fn get_to_remove(j_data: serde_json::Value) -> Option<ToRemove> {
+pub fn get_to_remove(j_data: serde_json::Value) -> Option<ToRemove>
+{
     let v_index_ids = j_data.get("index_ids");
     let v_metric_ids = j_data.get("metric_ids");
 
@@ -128,7 +133,8 @@ pub fn get_to_remove(j_data: serde_json::Value) -> Option<ToRemove> {
     Some(msg)
 }
 
-pub fn get_log_level(j_data: serde_json::Value) -> Option<LogLevel> {
+pub fn get_log_level(j_data: serde_json::Value) -> Option<LogLevel>
+{
     let v_level = j_data.get("level");
     let v_logger = j_data.get("logger");
 
