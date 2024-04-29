@@ -1,17 +1,11 @@
-pub mod common {
-    tonic::include_proto!("com.centreon.common");
-}
-
-pub mod broker {
-    tonic::include_proto!("com.centreon.broker");
-}
-
 use broker::broker_client::BrokerClient;
 use broker::*;
-use prost::Message;
+
+use crate::factory::*;
 
 #[tokio::main]
-pub async fn send_message(pid: u32, method: &str) -> Result<(), Box<dyn std::error::Error>> {
+pub async fn send_message(pid: u32, method: &str) -> Result<(), Box<dyn std::error::Error>>
+{
     let mut client = BrokerClient::connect(format!("http://[::1]:{}", pid)).await?;
     let request = tonic::Request::new(());
 
@@ -32,188 +26,46 @@ pub async fn send_message(pid: u32, method: &str) -> Result<(), Box<dyn std::err
         "GetNumEndpoint" => send_request!(get_num_endpoint),
         "GetProcessingStats" => send_request!(get_processing_stats),
         _ => {
-            eprintln!("Unknown method '{}'", method)
+            eprintln!("Unknown method '{}' or it needs data.", method)
         }
     }
 
     Ok(())
 }
 
-/////////////////////////////// FONCTION DE TEST
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct SqlConnection {
-    #[prost(uint32, optional, tag = "1")]
-    pub id: ::core::option::Option<u32>,
-}
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct MyMessage {
-    #[prost(message, optional, tag = "1")]
-    pub generic_name_or_index: ::core::option::Option<GenericNameOrIndex>,
-}
-
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct MyBaInfo {
-    #[prost(uint32, tag = "1")]
-    pub id: u32,
-    #[prost(string, tag = "2")]
-    pub output_file: String,
-}
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct GenericString {
-    #[prost(string, tag = "1")]
-    pub str_arg: String,
-}
-
 #[tokio::main]
-pub async fn send_message_get_module_stats(
-    pid: u32,
-    method: &str,
-    json_params: &str,
-) -> Result<(), Box<dyn std::error::Error>> {
+pub async fn send_message_with_data(pid: u32, method: &str, j_data: serde_json::Value) -> Result<(), Box<dyn std::error::Error>>
+{
     let mut client = BrokerClient::connect(format!("http://[::1]:{}", pid)).await?;
+    let request = tonic::Request::new(());
 
-    let msg = GenericNameOrIndex {
-        name_or_index: Some(generic_name_or_index::NameOrIndex::Idx((0))),
-    };
-
-    let request = tonic::Request::new(msg);
-
-    let response = client.get_modules_stats(request).await?;
-
-    println!("Response: {:?}", response.into_inner());
+    macro_rules! send_request {
+        ($function:ident, $data_type:ident) => {{
+            let msg = $data_type(j_data).unwrap();
+            let request = tonic::Request::new(msg);
+            let response = client.$function(request).await?;
+            let msg_response = response.into_inner();
+            println!("{:?}", msg_response);
+        }};
+    }
+    
+    match method {
+        "SetSqlManagerStats" => send_request!(set_sql_manager_stats, get_sql_manager_stats_options),
+        "GetSqlManagerStats" => send_request!(get_sql_manager_stats, get_sql_connection),
+        "GetMuxerStats" => send_request!(get_muxer_stats, get_generic_string),
+        "GetModulesStats" => send_request!(get_modules_stats, get_generic_name_or_index),
+        "GetEndpointStats" => send_request!(get_endpoint_stats, get_generic_name_or_index),
+        "RebuildRRDGraphs" => send_request!(rebuild_rrd_graphs, get_index_ids),
+        "GetBa" => send_request!(get_ba, get_ba_info),
+        "RemoveGraphs" => send_request!(remove_graphs, get_to_remove),
+        "RemovePollers" => send_request!(remove_poller, get_generic_name_or_index),
+        "GetLogInfo" => send_request!(get_log_info, get_generic_string),
+        "SetLogLevel" => send_request!(set_log_level, get_log_level),
+        "SetLogFlushPeriod" => send_request!(set_log_flush_period, get_log_flush_period),
+        _ => {
+            eprintln!("Unknown method '{}' or it takes no data.", method)
+        }
+    }
 
     Ok(())
 }
-
-#[tokio::main]
-pub async fn send_message_get_sql_manager_stats(
-    pid: u32,
-    method: &str,
-    json_params: &str,
-) -> Result<(), Box<dyn std::error::Error>> {
-    let mut client = BrokerClient::connect(format!("http://[::1]:{}", pid)).await?;
-
-    let msg = broker::SqlConnection { id: Some(1) };
-
-    let request = tonic::Request::new(msg);
-
-    let response = client.get_sql_manager_stats(request).await?;
-
-    println!("Response: {:?}", response.into_inner());
-
-    Ok(())
-}
-
-#[tokio::main]
-pub async fn send_message_get_muxer_stats(
-    pid: u32,
-    method: &str,
-    json_params: &str,
-) -> Result<(), Box<dyn std::error::Error>> {
-    let mut client = BrokerClient::connect(format!("http://[::1]:{}", pid)).await?;
-
-    let msg = broker::GenericString {
-        str_arg: "".to_string(),
-    };
-
-    let request = tonic::Request::new(msg);
-
-    let response = client.get_muxer_stats(request).await?;
-
-    println!("Response: {:?}", response.into_inner());
-
-    Ok(())
-}
-
-#[tokio::main]
-pub async fn send_message_getEndPointStats(
-    pid: u32,
-    method: &str,
-    json_params: &str,
-) -> Result<(), Box<dyn std::error::Error>> {
-    let mut client = BrokerClient::connect(format!("http://[::1]:{}", pid)).await?;
-
-    let msg = GenericNameOrIndex {
-        name_or_index: Some(generic_name_or_index::NameOrIndex::Idx((0))),
-    };
-
-    let request = tonic::Request::new(msg);
-
-    let response = client.get_endpoint_stats(request).await?;
-
-    println!("Response: {:?}", response.into_inner());
-
-    Ok(())
-}
-
-#[tokio::main]
-pub async fn send_message_get_Ba(
-    pid: u32,
-    method: &str,
-    json_params: &str,
-) -> Result<(), Box<dyn std::error::Error>> {
-    let mut client = BrokerClient::connect(format!("http://[::1]:{}", pid)).await?;
-
-    let msg = broker::BaInfo {
-        id: 0,
-        output_file: "".to_string(),
-    };
-
-    let request = tonic::Request::new(msg);
-
-    let response = client.get_ba(request).await?;
-
-    println!("Response: {:?}", response.into_inner());
-
-    Ok(())
-}
-
-#[derive(Debug, serde::Deserialize)]
-struct MyObject {
-    // Define your JSON structure fields here
-    str_arg: String,
-    // Add other fields as needed
-}
-
-#[tokio::main]
-pub async fn send_message_get_log_info(
-    pid: u32,
-    method: &str,
-    json_params: &str,
-) -> Result<(), Box<dyn std::error::Error>> {
-    /*/
-    let json_str = r#"{"str_arg":"hellowrold"}"#;
-
-    // Deserialize the JSON string into an instance of MyObject
-    let my_object: MyObject = serde_json::from_str(json_str).expect("Failed to deserialize JSON");
-
-    // Access the fields of the deserialized object
-    println!("str_arg: {}", my_object.str_arg);
-    println!("test");
-    */
-    let mut client = BrokerClient::connect(format!("http://[::1]:{}", pid)).await?;
-
-    let msg = broker::GenericString {
-        // str_arg: my_object.str_arg.to_string(),
-        str_arg: "".to_string(),
-    };
-
-    let request = tonic::Request::new(msg);
-
-    let response = client.get_log_info(request).await?;
-
-    println!("Response: {:?}", response.into_inner());
-
-    Ok(())
-}
-
-/*
-send_message_get_module_stats(0, "GetModulesStats", "").await?;
-send_message_get_sql_manager_stats(0, "GetSqlManagerStats", "").await?;
-send_message_get_muxer_stats(0, "GetMuxerStats", "").await?;
-send_message_getEndPointStats(0, "GetEndpointStats", "").await?;
-send_message_get_Ba(0, "GetBa", "").await?;
-send_message_get_log_info(0, "GetLogInfo", "").await?;
-*/

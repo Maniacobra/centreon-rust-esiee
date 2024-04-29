@@ -10,12 +10,13 @@ use tokio::runtime::Runtime;
 
 mod ccc_client;
 use ccc_client::send_message;
-use ccc_client::send_message_getEndPointStats;
-use ccc_client::send_message_get_Ba;
-use ccc_client::send_message_get_log_info;
-use ccc_client::send_message_get_module_stats;
-use ccc_client::send_message_get_muxer_stats;
-use ccc_client::send_message_get_sql_manager_stats;
+
+mod factory;
+use factory::*;
+
+use serde_json;
+
+use crate::ccc_client::*;
 
 fn long_options() -> Options {
     let mut opts = Options::new();
@@ -44,33 +45,42 @@ fn long_options() -> Options {
 fn usage(opts: Options, program: String, color_enabled: bool) {
     if color_enabled {
         let brief = format!("{}: {} [options]", "Usage".blue(), program);
-        println!("'ccc' uses centreon-broker or centreon-engine gRPC api to communicate with them");
+        println!("'ccc-rust' uses centreon-broker or centreon-engine gRPC api to communicate with them");
         print!("{}", opts.usage(&brief));
-        println!("\n{}:\n ccc -p 51001 --list", "Examples".blue());
-        println!(" # Lists available functions from gRPC interface at port 51000");
-        println!(" ccc -p 51001 GetVersion .");
+        println!("\n{}:\n ccc-rust -p 51001 --list", "Examples".blue());
+        println!(" # Lists available functions from gRPC interface at port 51001");
+        println!(" ccc-rust -p 51001 -c GetVersion");
         println!(" # Calls the GetVersion method.");
+        println!(" ccc-rust -p 51001 -c GetModulesStats{{\"idx\":2}}");
+        println!(" # Calls the GetModulesStats method with data '2'.");
     } else {
         let brief = format!("Usage: {} [options]", program);
-        println!("'ccc' uses centreon-broker or centreon-engine gRPC api to communicate with them");
+        println!("'ccc--rust' uses centreon-broker or centreon-engine gRPC api to communicate with them");
         print!("{}", opts.usage(&brief));
-        println!("\nExamples:\n ccc -p 51001 --list");
-        println!(" # Lists available functions from gRPC interface at port 51000");
-        println!(" ccc -p 51001 GetVersion .");
+        println!("\nExamples:\n ccc--rust -p 51001 --list");
+        println!(" # Lists available functions from gRPC interface at port 51001");
+        println!(" ccc-rust -p 51001 -c GetVersion");
         println!(" # Calls the GetVersion method.");
+        println!(" ccc-rust -p 51001 -c GetModulesStats{{\"idx\":2}}");
+        println!(" # Calls the GetModulesStats method with data '2'.");
     }
 }
 
-use prost_serde::build_with_serde;
+fn display_list() {
+    // Recopier la liste qui s'affiche quand ccc -p 51001 -l
+    todo!();
+}
 
 #[allow(dead_code)]
 fn main() -> ExitCode {
+
+    ////////////// GET OPT
+
     let args: Vec<_> = env::args().collect();
     let program = args[0].clone();
 
     let mut port: u32 = 0;
 
-    let mut list: bool = false;
     let mut help: bool = false;
     let mut color_enabled: bool = true;
     let mut command: String = String::new();
@@ -90,7 +100,7 @@ fn main() -> ExitCode {
         color_enabled = false;
     }
     if matches.opt_present("l") {
-        list = true;
+        display_list();
     }
     if matches.opt_present("p") {
         port = matches.opt_get("p").unwrap().unwrap();
@@ -107,122 +117,62 @@ fn main() -> ExitCode {
         return ExitCode::SUCCESS;
     }
     if port == 0 {
-        // fix tempo car le port est pas recup
         eprintln!("You must specify a port for the connection to the gRPC server");
-        return ExitCode::from(2);
+        return ExitCode::from(1);
     }
 
-    // SENDING MESSAGE
+    ////////////// JSON PARSING
 
-    /*
-            send_message(port,command.as_str());
-            send_message_get_module_stats(0, "GetModulesStats", "");
-            send_message_get_sql_manager_stats(0, "GetSqlManagerStats", "");
-            send_message_get_muxer_stats(0, "GetMuxerStats", "");
-            send_message_getEndPointStats(0, "GetEndpointStats", "");
-            send_message_get_Ba(0, "GetBa", "");
-            send_message_get_log_info(0, "GetLogInfo", "");
-    */
-    let result_send_message = send_message(port, command.as_str());
+    if command.len() == 0 {
+        eprintln!("Missing command");
+        return ExitCode::from(1);
+    }
+
+    let mut cmd_str = command.as_str();
+    let mut opt_data: Option<serde_json::Value> = None;
+    let mut temp = cmd_str.to_string();
+    match extract_value(cmd_str) {
+        Some((name, data)) => {
+            temp = name;
+            // Convert to JSON
+            match serde_json::from_str(data.as_str()) {
+                Ok(j) => opt_data = j,
+                Err(..) => {
+                    eprintln!("Invalid JSON syntax : {data}");
+                    return ExitCode::from(1);
+                }
+            }
+        },
+        None => (),
+    }
+    cmd_str = temp.as_str();
+
+    if opt_data == None && !cmd_str.chars().all(char::is_alphanumeric) {
+        eprintln!("Invalid characters in command : {cmd_str}");
+        return ExitCode::from(1);
+    }
+
+    println!("{cmd_str}");
+
+    ////////////// SENDING MESSAGE
+    
+    let result_send_message = match opt_data {
+
+        None => send_message(port, cmd_str),
+
+        Some(j_data) => send_message_with_data(port, cmd_str, j_data)
+
+    };
     match result_send_message {
         Ok(_) => (),
         Err(e) => {
             eprintln!("\n---- ERROR ----\n");
             eprintln!("{:?}", e);
             eprintln!();
-            return ExitCode::from(1);
+            return ExitCode::from(2);
         }
     }
-    /*
-        let result_module_stats = send_message_get_module_stats(port, command.as_str(), "");
-        match result_module_stats {
-            Ok(_) => (),
-            Err(e) => {
-                eprintln!("\n---- ERROR ----\n");
-                eprintln!("{:?}", e);
-                eprintln!();
-                return ExitCode::from(1);
-            }
-        }
 
-        let result_sql_manager_stats = send_message_get_sql_manager_stats(port, command.as_str(), "");
-        match result_sql_manager_stats {
-            Ok(_) => (),
-            Err(e) => {
-                eprintln!("\n---- ERROR ----\n");
-                eprintln!("{:?}", e);
-                eprintln!();
-                return ExitCode::from(1);
-            }
-        }
-
-        let result_muxer_stats = send_message_get_muxer_stats(port, command.as_str(), "");
-        match result_muxer_stats {
-            Ok(_) => (),
-            Err(e) => {
-                eprintln!("\n---- ERROR ----\n");
-                eprintln!("{:?}", e);
-                eprintln!();
-                return ExitCode::from(1);
-            }
-        }
-
-        let result_endpoint_stats = send_message_getEndPointStats(port, command.as_str(), "");
-        match result_endpoint_stats {
-            Ok(_) => (),
-            Err(e) => {
-                eprintln!("\n---- ERROR ----\n");
-                eprintln!("{:?}", e);
-                eprintln!();
-                return ExitCode::from(1);
-            }
-        }
-
-        let result_ba = send_message_get_Ba(port, command.as_str(), "");
-        match result_ba {
-            Ok(_) => (),
-            Err(e) => {
-                eprintln!("\n---- ERROR ----\n");
-                eprintln!("{:?}", e);
-                eprintln!();
-                return ExitCode::from(1);
-            }
-        }
-
-        let result_log_info = send_message_get_log_info(port, command.as_str(), "");
-        match result_log_info {
-            Ok(_) => (),
-            Err(e) => {
-                eprintln!("\n---- ERROR ----\n");
-                eprintln!("{:?}", e);
-                eprintln!();
-                return ExitCode::from(1);
-            }
-        }
-    */
-    let msg_fn = match command.as_str() {
-        "module_stats" => {
-            send_message_get_module_stats(port, command.as_str(), command.as_str());
-        }
-        "sql_manager_stats" => {
-            send_message_get_sql_manager_stats(port, command.as_str(), command.as_str());
-        }
-        "muxer_stats" => {
-            send_message_get_muxer_stats(port, command.as_str(), command.as_str());
-        }
-        "end_point_stats" => {
-            send_message_getEndPointStats(port, command.as_str(), command.as_str());
-        }
-        "ba" => {
-            send_message_get_Ba(port, command.as_str(), command.as_str());
-        }
-        "log_info" => {
-            send_message_get_log_info(port, command.as_str(), command.as_str());
-        }
-        _ => {
-            eprintln!("Unknown command msg_fn: {}", command);
-            return ExitCode::from(1);
-        }
-    };
     ExitCode::SUCCESS
+
 }
