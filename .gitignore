@@ -1,13 +1,4 @@
-centreon-cpp/CMakeFiles
-centreon-cpp/CMakeCache.txt
-centreon-cpp/ccc/CMakeFiles
-centreon-cpp/ccc/CMakeCache.txt
-centreon-cpp/ccc/Makefile
-centreon-cpp/ccc/cmake_install.cmake
-
 ccc-rust/target
 ccc-rust/Cargo.lock
-
-macro-test
 
 .vscode

@@ -143,6 +143,7 @@ fn main() -> ExitCode {
     }
     if matches.opt_present("l") {
         display_list(color_enabled);
+        return ExitCode::SUCCESS;
     }
     if matches.opt_present("p") {
         port = matches.opt_get("p").unwrap().unwrap();

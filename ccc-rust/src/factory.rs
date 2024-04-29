@@ -28,7 +28,7 @@ pub fn get_generic_name_or_index(j_data: serde_json::Value) -> Option<GenericNam
     let msg = GenericNameOrIndex {
         name_or_index: match (v_str, v_idx) {
             (None, Some(v)) => Some(generic_name_or_index::NameOrIndex::Idx(v_idx.unwrap().as_u64().unwrap())),
-            (Some(v), None) => Some(generic_name_or_index::NameOrIndex::Str(v_idx.unwrap().as_str().unwrap().to_string())),
+            (Some(v), None) => Some(generic_name_or_index::NameOrIndex::Str(v_str.unwrap().as_str().unwrap().to_string())),
             _ => return None
         }
     };
