@@ -48,39 +48,118 @@ pub fn get_generic_string(j_data: serde_json::Value) -> Option<GenericString>
     Some(msg)
 }
 
-pub fn get_sql_manager_stats_options(j_data: serde_json::Value) -> Option<SqlManagerStatsOptions>
-{
-    todo!()
+pub fn get_sql_manager_stats_options(j_data: serde_json::Value) -> Option<SqlManagerStatsOptions> {
+    let slowest_statements_count = j_data.get("slowest_statements_count");
+    let slowest_queries_count = j_data.get("slowest_queries_count");
+
+    let msg = SqlManagerStatsOptions {
+        slowest_statements_count: match slowest_statements_count {
+            Some(v) => Some(v.as_u64().unwrap() as u32),
+            None => return None,
+        },
+        slowest_queries_count: match slowest_queries_count {
+            Some(v) => Some(v.as_u64().unwrap() as u32),
+            None => return None,
+        },
+    };
+    Some(msg)
 }
 
-pub fn get_sql_connection(j_data: serde_json::Value) -> Option<SqlConnection>
-{
-    todo!()
+
+
+pub fn get_sql_connection(j_data: serde_json::Value) -> Option<SqlConnection> {
+    let v_str = j_data.get("str");
+
+    let msg = SqlConnection {
+        id: match v_str {
+            Some(v) => Some(v.as_str().unwrap().parse::<u32>().unwrap()), 
+            None => return None,
+        },
+    };
+
+    Some(msg)
 }
 
-pub fn get_index_ids(j_data: serde_json::Value) -> Option<IndexIds>
-{
-    todo!()
+pub fn get_index_ids(j_data: serde_json::Value) -> Option<IndexIds> {
+    let v_ids = j_data.get("ids");
+
+    let msg = IndexIds {
+        index_ids: match v_ids {
+            Some(v) => v.as_array().unwrap().iter().map(|x| x.as_u64().unwrap()).collect(),
+            None => return None,
+        },
+    };
+
+    Some(msg)
 }
 
 pub fn get_ba_info(j_data: serde_json::Value) -> Option<BaInfo>
 {
-    todo!()
+    let v_id = j_data.get("id");
+    let v_output_file = j_data.get("output_file");
+
+    let msg = BaInfo {
+        id: match v_id {
+            Some(v) => v.as_u64().unwrap() as u64,
+            None => return None,
+        },
+        output_file: match v_output_file {
+            Some(v) => v.as_str().unwrap().to_string(),
+            None => return None,
+        },
+    };
+
+    Some(msg)
 }
 
-pub fn get_to_remove(j_data: serde_json::Value) -> Option<ToRemove>
-{
-    todo!()
+pub fn get_to_remove(j_data: serde_json::Value) -> Option<ToRemove> {
+    let v_index_ids = j_data.get("index_ids");
+    let v_metric_ids = j_data.get("metric_ids");
+
+    let msg = ToRemove {
+        index_ids: match v_index_ids {
+            Some(v) => v.as_array().unwrap().iter().map(|x| x.as_u64().unwrap()).collect(),
+            None => return None,
+        },
+        metric_ids: match v_metric_ids {
+            Some(v) => v.as_array().unwrap().iter().map(|x| x.as_u64().unwrap()).collect(),
+            None => return None,
+        },
+    };
+
+    Some(msg)
 }
 
-pub fn get_log_level(j_data: serde_json::Value) -> Option<LogLevel>
-{
-    todo!()
+pub fn get_log_level(j_data: serde_json::Value) -> Option<LogLevel> {
+    let v_level = j_data.get("level");
+    let v_logger = j_data.get("logger");
+
+    let msg = LogLevel {
+        level: match v_level {
+            Some(v) => v.as_i64().unwrap() as i32, 
+            None => return None,
+        },
+        logger: match v_logger {
+            Some(v) => v.as_str().unwrap().to_string(), 
+            None => return None,
+        },
+    };
+
+    Some(msg)
 }
 
 pub fn get_log_flush_period(j_data: serde_json::Value) -> Option<LogFlushPeriod>
 {
-    todo!()
+    let v_period = j_data.get("period");
+
+    let msg = LogFlushPeriod {
+        period: match v_period {
+            Some(v) => v.as_u64().unwrap() as u32,
+            None => return None,
+        },
+    };
+
+    Some(msg)
 }
 
 /*
