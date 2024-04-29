@@ -65,8 +65,6 @@ pub fn get_sql_manager_stats_options(j_data: serde_json::Value) -> Option<SqlMan
     Some(msg)
 }
 
-
-
 pub fn get_sql_connection(j_data: serde_json::Value) -> Option<SqlConnection> {
     let v_str = j_data.get("str");
 
@@ -81,7 +79,7 @@ pub fn get_sql_connection(j_data: serde_json::Value) -> Option<SqlConnection> {
 }
 
 pub fn get_index_ids(j_data: serde_json::Value) -> Option<IndexIds> {
-    let v_ids = j_data.get("ids");
+    let v_ids = j_data.get("index_ids");
 
     let msg = IndexIds {
         index_ids: match v_ids {
