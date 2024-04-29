@@ -9,3 +9,5 @@ ccc-rust/target
 ccc-rust/Cargo.lock
 
 macro-test
+
+.vscode

@@ -1,9 +1,0 @@
-#!/bin/bash
-
-arg=$1
-
-while :
-do
-  echo "Tester $1" >> /tmp/file$arg
-  sleep 1
-done
