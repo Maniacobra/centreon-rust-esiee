@@ -88,7 +88,6 @@ fn display_list(color_enabled: bool) {
         println!("{} GetLogInfo", " ".repeat(4).green());
         println!("{} SetLogLevel", " ".repeat(4).green());
         println!("{} SetLogFlushPeriod", " ".repeat(4).green());
-        println!("{} GetIndexIds", " ".repeat(4).green());
     } else {
         println!("Available methods:");
         println!(" GetVersion");
@@ -110,7 +109,6 @@ fn display_list(color_enabled: bool) {
         println!(" GetLogInfo");
         println!(" SetLogLevel");
         println!(" SetLogFlushPeriod");
-        println!(" GetIndexIds");
     }
 }
 

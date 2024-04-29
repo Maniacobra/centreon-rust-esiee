@@ -68,7 +68,6 @@ pub async fn send_message_with_data(pid: u32, method: &str, j_data: serde_json::
         "GetLogInfo" => send_request!(get_log_info, get_generic_string),
         "SetLogLevel" => send_request!(set_log_level, get_log_level),
         "SetLogFlushPeriod" => send_request!(set_log_flush_period, get_log_flush_period),
-        "GetIndexIds" => send_request!(get_index_ids, get_index_ids),
         _ => {
             eprintln!("Unknown method '{}' or it takes no data.", method)
         }
