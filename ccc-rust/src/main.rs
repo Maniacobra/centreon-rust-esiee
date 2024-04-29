@@ -68,26 +68,27 @@ fn usage(opts: Options, program: String, color_enabled: bool) {
 
 fn display_list(color_enabled: bool) {
     if color_enabled {
-        println!("{}:", "Available methods".blue());
-        println!(" GetVersion");
-        println!(" GetProcessStats");
-        println!(" GetGenericStats");
-        println!(" GetConflictManagerStats");
-        println!(" GetNumModules");
-        println!(" GetNumEndpoint");
-        println!(" GetProcessingStats");
-        println!(" SetSqlManagerStats");
-        println!(" GetSqlManagerStats");
-        println!(" GetMuxerStats");
-        println!(" GetModulesStats");
-        println!(" GetEndpointStats");
-        println!(" RebuildRRDGraphs");
-        println!(" GetBa");
-        println!(" RemoveGraphs");
-        println!(" RemovePollers");
-        println!(" GetLogInfo");
-        println!(" SetLogLevel");
-        println!(" SetLogFlushPeriod");
+        println!("{}:", "Available methods".green());
+        println!("{} GetVersion", " ".repeat(4).green());
+        println!("{} GetProcessStats", " ".repeat(4).green());
+        println!("{} GetGenericStats", " ".repeat(4).green());
+        println!("{} GetConflictManagerStats", " ".repeat(4).green());
+        println!("{} GetNumModules", " ".repeat(4).green());
+        println!("{} GetNumEndpoint", " ".repeat(4).green());
+        println!("{} GetProcessingStats", " ".repeat(4).green());
+        println!("{} SetSqlManagerStats", " ".repeat(4).green());
+        println!("{} GetSqlManagerStats", " ".repeat(4).green());
+        println!("{} GetMuxerStats", " ".repeat(4).green());
+        println!("{} GetModulesStats", " ".repeat(4).green());
+        println!("{} GetEndpointStats", " ".repeat(4).green());
+        println!("{} RebuildRRDGraphs", " ".repeat(4).green());
+        println!("{} GetBa", " ".repeat(4).green());
+        println!("{} RemoveGraphs", " ".repeat(4).green());
+        println!("{} RemovePollers", " ".repeat(4).green());
+        println!("{} GetLogInfo", " ".repeat(4).green());
+        println!("{} SetLogLevel", " ".repeat(4).green());
+        println!("{} SetLogFlushPeriod", " ".repeat(4).green());
+        println!("{} GetIndexIds", " ".repeat(4).green());
     } else {
         println!("Available methods:");
         println!(" GetVersion");
@@ -109,6 +110,7 @@ fn display_list(color_enabled: bool) {
         println!(" GetLogInfo");
         println!(" SetLogLevel");
         println!(" SetLogFlushPeriod");
+        println!(" GetIndexIds");
     }
 }
 
